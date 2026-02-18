@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TUV Certificate Tracker</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins', sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+    padding:20px;
+}
+
+/* HEADER */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:30px;
+}
+
+.logo{
+    height:60px;
+}
+
+/* SEARCH */
+.search-container{
+    max-width:600px;
+    margin:0 auto 20px auto;
+    position:relative;
+}
+
+#searchBox{
+    width:100%;
+    padding:14px 18px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    font-size:16px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+.suggestions{
+    position:absolute;
+    width:100%;
+    background:#fff;
+    border-radius:8px;
+    margin-top:5px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    max-height:250px;
+    overflow-y:auto;
+    z-index:999;
+}
+
+.suggestion-item{
+    padding:10px 15px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.suggestion-item:hover{
+    background:#f0f2f5;
+}
+
+/* CARD */
+.card{
+    max-width:1000px;
+    margin:20px auto;
+    background:#fff;
+    padding:25px;
+    border-radius:15px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.08);
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
+}
+
+.field{
+    display:flex;
+    flex-direction:column;
+}
+
+.field label{
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:5px;
+    color:#555;
+}
+
+.field .value{
+    background:#f7f9fc;
+    padding:10px;
+    border-radius:8px;
+    min-height:40px;
+    font-size:14px;
+}
+
+/* STATUS COLORS */
+.status-valid{ background:#e6f7ec !important; color:#1b8a3d; font-weight:600; }
+.status-expired{ background:#fde8e8 !important; color:#c81e1e; font-weight:600; }
+.status-warning{ background:#fff4e5 !important; color:#d97706; font-weight:600; }
+
+/* FOOTER */
+.footer{
+    margin-top:40px;
+    text-align:center;
+    font-size:14px;
+    color:#666;
+}
+
+.last-updated{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    font-size:13px;
+    color:#555;
+}
+
+@media(max-width:600px){
+    .logo{ height:40px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <img src="orcp.bmp" class="logo">
+    <img src="nbtc.bmp" class="logo">
+</div>
+
+<div class="search-container">
+    <input type="text" id="searchBox" placeholder="Search by EMP# or Name...">
+    <div class="suggestions" id="suggestions"></div>
+</div>
+
+<div id="resultContainer"></div>
+
+<div class="footer">
+    Created and Managed by Mohammad Javed Shaikh
+</div>
+
+<div class="last-updated" id="lastUpdated"></div>
+
+<script>
+
+// ================== CONFIG ==================
+const excelFileURL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/for%20web%20TUV.xlsx";
+// ===========================================
+
+let dataRows = [];
+
+// Fetch Excel
+fetch(excelFileURL)
+.then(res => res.arrayBuffer())
+.then(data => {
+    const workbook = XLSX.read(data, {type:"array"});
+    const sheet = workbook.Sheets["TUV"];
+    dataRows = XLSX.utils.sheet_to_json(sheet);
+});
+
+// SEARCH
+const searchBox = document.getElementById("searchBox");
+const suggestionsDiv = document.getElementById("suggestions");
+
+searchBox.addEventListener("input", function(){
+    const value = this.value.toLowerCase();
+    suggestionsDiv.innerHTML = "";
+    if(!value) return;
+
+    const filtered = dataRows.filter(row =>
+        String(row["EMP#"]).toLowerCase().includes(value) ||
+        String(row["NAME"]).toLowerCase().includes(value)
+    ).slice(0,10);
+
+    filtered.forEach(row=>{
+        const div = document.createElement("div");
+        div.classList.add("suggestion-item");
+        div.textContent = `${row["EMP#"]} - ${row["NAME"]}`;
+        div.onclick = ()=>showDetails(row);
+        suggestionsDiv.appendChild(div);
+    });
+});
+
+// SHOW DETAILS
+function showDetails(row){
+    suggestionsDiv.innerHTML="";
+    searchBox.value = `${row["EMP#"]} - ${row["NAME"]}`;
+
+    const container = document.getElementById("resultContainer");
+    container.innerHTML="";
+
+    const card = document.createElement("div");
+    card.classList.add("card");
+
+    Object.keys(row).forEach(key=>{
+        const field = document.createElement("div");
+        field.classList.add("field");
+
+        const label = document.createElement("label");
+        label.textContent = key;
+
+        const value = document.createElement("div");
+        value.classList.add("value");
+
+        let cellValue = row[key];
+
+        if(key === "Remaining days" || key === "EXPIRY DATE"){
+            const expiry = new Date(row["EXPIRY DATE"]);
+            const today = new Date();
+            const diff = Math.ceil((expiry - today)/(1000*60*60*24));
+            cellValue = diff;
+            if(diff < 0){
+                value.classList.add("status-expired");
+            } else if(diff < 30){
+                value.classList.add("status-warning");
+            } else{
+                value.classList.add("status-valid");
+            }
+        }
+
+        value.textContent = cellValue ?? "-";
+        field.appendChild(label);
+        field.appendChild(value);
+        card.appendChild(field);
+    });
+
+    container.appendChild(card);
+}
+
+// GITHUB LAST UPDATED
+fetch("https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/commits?path=for%20web%20TUV.xlsx&page=1&per_page=1")
+.then(res=>res.json())
+.then(data=>{
+    const date = new Date(data[0].commit.committer.date);
+    document.getElementById("lastUpdated").innerText =
+        "Last Updated: " + date.toLocaleString();
+});
+
+</script>
+
+</body>
+</html>
