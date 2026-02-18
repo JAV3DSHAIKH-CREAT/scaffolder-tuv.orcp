@@ -1,264 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TUV PROFESSIONAL DATABASE</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUV Certification Portal</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-
-<style>
-:root{
-    --dark-bg:#0f172a;
-    --card-bg:#1e293b;
-    --accent:#2563eb;
-    --light:#e2e8f0;
-    --muted:#94a3b8;
-    --shadow:0 10px 25px rgba(0,0,0,0.4);
-}
-*{margin:0;padding:0;box-sizing:border-box}
-
-body{
-    font-family:'Poppins',sans-serif;
-    background:var(--dark-bg);
-    color:var(--light);
-    min-height:100vh;
-}
-
-header{
-    background:linear-gradient(135deg,#1e3a8a,#2563eb);
-    padding:20px;
-    text-align:center;
-    border-bottom-left-radius:30px;
-    border-bottom-right-radius:30px;
-    box-shadow:var(--shadow);
-}
-
-header h1{font-size:1.4rem;font-weight:600}
-header p{font-size:.8rem;opacity:.8}
-
-.search-wrapper{
-    max-width:500px;
-    margin:20px auto;
-    position:relative;
-}
-
-#mainSearch{
-    width:100%;
-    padding:12px 20px;
-    border-radius:50px;
-    border:1px solid #334155;
-    background:#1e293b;
-    color:white;
-    font-size:0.9rem;
-}
-
-.suggestions{
-    position:absolute;
-    top:50px;
-    left:0;
-    right:0;
-    background:#1e293b;
-    border-radius:15px;
-    max-height:220px;
-    overflow-y:auto;
-    display:none;
-    border:1px solid #334155;
-    box-shadow:var(--shadow);
-}
-
-.suggestion-item{
-    padding:10px 20px;
-    cursor:pointer;
-    border-bottom:1px solid #334155;
-    font-size:.85rem;
-}
-.suggestion-item:hover{background:#2563eb}
-
-.highlight{
-    color:#facc15;
-    font-weight:600;
-}
-
-.container{
-    max-width:95%;
-    margin:0 auto 50px auto;
-    display:flex;
-    flex-wrap:wrap;
-    gap:15px;
-    justify-content:center;
-}
-
-.section-box{
-    background:var(--card-bg);
-    width:48%;
-    padding:15px;
-    border-radius:15px;
-    box-shadow:var(--shadow);
-    border:1px solid #334155;
-}
-
-.section-box h3{
-    margin-bottom:10px;
-    font-weight:700;
-    font-size:.95rem;
-    color:#3b82f6;
-    border-left:4px solid var(--accent);
-    padding-left:8px;
-}
-
-.section-grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:8px;
-}
-
-.info-card{
-    background:#0f172a;
-    padding:8px 10px;
-    border-radius:8px;
-    border:1px solid #334155;
-}
-
-.label{
-    font-size:.6rem;
-    color:var(--muted);
-    text-transform:uppercase;
-}
-
-.value{
-    font-size:.85rem;
-    font-weight:500;
-    word-break:break-word;
-}
-
-.status-expired{color:#f87171;font-weight:600}
-.status-warning{color:#facc15;font-weight:600}
-.status-valid{color:#22c55e;font-weight:600}
-
-footer{
-    text-align:center;
-    padding:10px;
-    background:#1e293b;
-    font-size:.75rem;
-    color:var(--muted);
-}
-
-@media(max-width:1000px){
-    .section-box{width:100%}
-}
-</style>
-</head>
-
-<body>
-
-<header>
-    <h1>TUV CERTIFICATE DATABASE</h1>
-    <p>PROFESSIONAL RECORD MANAGEMENT SYSTEM</p>
-</header>
-
-<div class="search-wrapper">
-    <input type="text" id="mainSearch" placeholder="Search by EMP# or NAME..." autocomplete="off">
-    <div id="suggestions" class="suggestions"></div>
-</div>
-
-<div class="container" id="infoContainer"></div>
-
-<footer>
-Created and Managed by Mohammad Javed Shaikh
-</footer>
-
-<script>
-const FILE_URL="for%20web%20TUV.xlsx";
-let headers=[];
-let rows=[];
-
-async function loadExcel(){
-    const response=await fetch(FILE_URL);
-    const buffer=await response.arrayBuffer();
-    const workbook=XLSX.read(buffer,{type:"array"});
-    const sheet=workbook.Sheets["TUV"];
-    const json=XLSX.utils.sheet_to_json(sheet,{header:1});
-    headers=json[0];
-    rows=json.slice(1);
-}
-loadExcel();
-
-const searchInput=document.getElementById("mainSearch");
-const suggestBox=document.getElementById("suggestions");
-
-searchInput.addEventListener("input",function(){
-    const query=this.value.toLowerCase().trim();
-    suggestBox.innerHTML="";
-    if(query.length<1){suggestBox.style.display="none";return;}
-
-    const matches=rows.filter(row=>{
-        const colA=String(row[0]||"").toLowerCase();
-        const colB=String(row[1]||"").toLowerCase();
-        return colA.includes(query)||colB.includes(query);
-    }).slice(0,8);
-
-    if(matches.length>0){
-        suggestBox.style.display="block";
-        matches.forEach(row=>{
-            const div=document.createElement("div");
-            div.className="suggestion-item";
-            const text=row[0]+" - "+row[1];
-            const regex=new RegExp(query,"gi");
-            div.innerHTML=text.replace(regex,match=>`<span class="highlight">${match}</span>`);
-            div.onclick=()=>renderDetails(row);
-            suggestBox.appendChild(div);
-        });
-    }else{
-        suggestBox.style.display="none";
-    }
-});
-
-function renderDetails(row){
-    suggestBox.style.display="none";
-    const container=document.getElementById("infoContainer");
-    container.innerHTML="";
-
-    function createSection(title,start,end){
-        let section=document.createElement("div");
-        section.className="section-box";
-        let html=`<h3>${title}</h3><div class="section-grid">`;
-
-        for(let i=start;i<end;i++){
-            let label=headers[i]||"";
-            let value=row[i]||"N/A";
-
-            if(label.toLowerCase().includes("expiry")){
-                const date=new Date(value);
-                const diff=Math.ceil((date-new Date())/(1000*60*60*24));
-                if(diff<0)value=`${diff} (Expired)`;
-                else if(diff<30)value=`${diff} Days`;
-            }
-
-            html+=`
-            <div class="info-card">
-                <span class="label">${label}</span>
-                <span class="value">${value}</span>
-            </div>`;
+    <style>
+        /* CSS STYLING */
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #f8f9fa;
+            --white: #ffffff;
         }
 
-        html+=`</div>`;
-        section.innerHTML=html;
-        container.appendChild(section);
-    }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: var(--primary);
+        }
 
-    createSection("Employee Info",0,5);
-    createSection("Certificate Info",5,10);
-    createSection("Additional Details",10,headers.length);
-}
+        /* Header Logos */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: var(--white);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
 
-window.addEventListener("click",(e)=>{
-    if(!e.target.closest(".search-wrapper")){
-        suggestBox.style.display="none";
-    }
-});
-</script>
+        .logo {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
 
+        /* Main Container */
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .search-section {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        h1 {
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        /* Search Box */
+        .search-container {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 18px 25px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        #searchInput:focus {
+            border-color: var(--accent);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.15);
+        }
+
+        /* Suggestions Dropdown */
+        #suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-radius: 15px;
+            margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            text-align: left;
+        }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8fbff;
+            color: var(--accent);
+        }
+
+        /* Results Grid */
+        #resultContainer {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .data-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--accent);
+            transition: transform 0.2s;
+        }
+
+        .data-card:hover { transform: translateY(-5px); }
+
+        .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #95a5a6;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-size: 15px;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        /* Status Colors */
+        .status-valid { background: #e8f5e9; color: var(--success); border-color: var(--success) !important; }
+        .status-expiring { background: #fff3e0; color: var(--warning); border-color: var(--warning) !important; }
+        .status-expired { background: #ffebee; color: var(--danger); border-color: var(--danger) !important; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px;
+            margin-top: 60px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .last-updated {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 11px;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            header { flex-direction: column; gap: 15px; padding: 20px; }
+            .grid-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="orcp.bmp" alt="ORCP" class="logo">
+        <img src="nbtc.bmp" alt="NBTC" class="logo">
+    </header>
+
+    <div class="container">
+        <div class="search-section">
+            <h1>TUV Certification Database</h1>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search by EMP# or Name...">
+                <div id="suggestions"></div>
+            </div>
+        </div>
+
+        <div id="resultContainer">
+            <div class="grid-layout" id="detailsGrid">
+                </div>
+        </div>
+    </div>
+
+    <footer>
+        Created and Managed by Mohammad Javed Shaikh
+    </footer>
+
+    <div class="last-updated" id="lastUpdated">
+        Syncing with GitHub...
+    </div>
+
+    <script>
+        /*******************************************************
+         * JAVASCRIPT LOGIC
+         *******************************************************/
+
+        // 1. SETTINGS - CHANGE THESE
+        const GITHUB_USER = 'YOUR_GITHUB_USERNAME';
+        const GITHUB_REPO = 'YOUR_REPO_NAME';
+        const FILE_NAME = 'for web TUV.xlsx';
+        const SHEET_NAME = 'TUV';
+
+        // URLs
+        const RAW_FILE_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${encodeURIComponent(FILE_NAME)}`;
+        const API_COMMITS_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/commits?path=${encodeURIComponent(FILE_NAME)}&per_page=1`;
+
+        let excelData = [];
+
+        // Load Excel File
+        async function initApp() {
+            try {
+                // Fetch Excel
+                const response = await fetch(RAW_FILE_URL);
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                
+                const worksheet = workbook.Sheets[SHEET_NAME];
+                if (!worksheet) throw new Error(`Sheet "${SHEET_NAME}" not found`);
+                
+                excelData = XLSX.utils.sheet_to_json(worksheet);
+                console.log("Data Loaded:", excelData.length, "rows");
+
+                // Fetch Update Time
+                const commitResponse = await fetch(API_COMMITS_URL);
+                const commits = await commitResponse.json();
+                if (commits[0]) {
+                    const date = new Date(commits[0].commit.committer.date);
+                    document.getElementById('lastUpdated').innerText = `Last Updated: ${date.toLocaleString()}`;
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('lastUpdated').innerText = "Error loading data.";
+            }
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsDiv = document.getElementById('suggestions');
+        const resultContainer = document.getElementById('resultContainer');
+        const detailsGrid = document.getElementById('detailsGrid');
+
+        // Live Suggestion Logic
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            suggestionsDiv.innerHTML = '';
+
+            if (query.length < 1) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            // Filter data for suggestions
+            const matches = excelData.filter(row => {
+                const empId = String(row['EMP#'] || '').toLowerCase();
+                const name = String(row['NAME'] || '').toLowerCase();
+                return empId.includes(query) || name.includes(query);
+            }).slice(0, 8); // Limit suggestions to 8
+
+            if (matches.length > 0) {
+                matches.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerText = `${item['EMP#']} - ${item['NAME']}`;
+                    div.onclick = () => selectRecord(item);
+                    suggestionsDiv.appendChild(div);
+                });
+                suggestionsDiv.style.display = 'block';
+            } else {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+
+        // Display Selected Record
+        function selectRecord(row) {
+            searchInput.value = `${row['EMP#']} - ${row['NAME']}`;
+            suggestionsDiv.style.display = 'none';
+            detailsGrid.innerHTML = '';
+            resultContainer.style.display = 'block';
+
+            // Define the headers we want to show
+            const headers = [
+                'EMP#', 'NAME', 'POSITION', 'TYPE', 'ISSUE DATE', 'EXPIRY DATE', 
+                'Remaining days', 'Status', 'Institute Name', 'Requested for Renewal Date', 
+                'Certificate', 'EMP STATUS', 'REMARKS', 'Physical Copy Received'
+            ];
+
+            headers.forEach(header => {
+                const value = row[header] || '—';
+                let customClass = '';
+
+                // Logic for status coloring
+                if (header === 'Status') {
+                    const statusText = String(value).toLowerCase();
+                    const days = parseInt(row['Remaining days']);
+
+                    if (statusText.includes('expired')) customClass = 'status-expired';
+                    else if (days < 30 || statusText.includes('soon')) customClass = 'status-expiring';
+                    else if (statusText.includes('valid')) customClass = 'status-valid';
+                }
+
+                const card = document.createElement('div');
+                card.className = `data-card ${customClass}`;
+                card.innerHTML = `
+                    <span class="label">${header}</span>
+                    <span class="value">${value}</span>
+                `;
+                detailsGrid.appendChild(card);
+            });
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target)) suggestionsDiv.style.display = 'none';
+        });
+
+        // Start
+        initApp();
+    </script>
 </body>
 </html>
