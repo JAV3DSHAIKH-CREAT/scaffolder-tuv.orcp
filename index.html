@@ -33,9 +33,11 @@
 
         .logo { height: 60px; width: auto; object-fit: contain; }
 
-        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; min-height: 70vh; }
 
         .search-section { text-align: center; margin-bottom: 40px; position: relative; }
+
+        h1 { font-weight: 600; color: var(--primary); margin-bottom: 25px; }
 
         .search-container { position: relative; max-width: 600px; margin: 0 auto; }
 
@@ -43,6 +45,7 @@
             width: 100%; padding: 18px 25px; font-size: 16px;
             border: 2px solid #e0e0e0; border-radius: 50px; outline: none;
             transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            box-sizing: border-box;
         }
 
         #searchInput:focus { border-color: var(--accent); box-shadow: 0 10px 20px rgba(52, 152, 219, 0.15); }
@@ -69,9 +72,12 @@
         .value { font-size: 14px; font-weight: 500; margin-top: 4px; display: block; }
 
         /* Status Colors */
-        .status-valid { border-left-color: var(--success); color: var(--success); }
-        .status-expiring { border-left-color: var(--warning); color: var(--warning); }
-        .status-expired { border-left-color: var(--danger); color: var(--danger); }
+        .status-valid { border-left-color: var(--success); }
+        .status-valid .value { color: var(--success); }
+        .status-expiring { border-left-color: var(--warning); }
+        .status-expiring .value { color: var(--warning); }
+        .status-expired { border-left-color: var(--danger); }
+        .status-expired .value { color: var(--danger); }
 
         footer { text-align: center; padding: 40px; color: #7f8c8d; font-size: 13px; }
 
@@ -87,15 +93,15 @@
 <body>
 
     <header>
-        <img src="orcp.bmp" alt="ORCP" class="logo" onerror="this.src='https://via.placeholder.com/150?text=ORCP+LOGO'">
-        <img src="nbtc.bmp" alt="NBTC" class="logo" onerror="this.src='https://via.placeholder.com/150?text=NBTC+LOGO'">
+        <img src="orcp.bmp" alt="ORCP" class="logo" onerror="this.style.opacity='0'">
+        <img src="nbtc.bmp" alt="NBTC" class="logo" onerror="this.style.opacity='0'">
     </header>
 
     <div class="container">
         <div class="search-section">
-            <h1>TUV Certification Portal</h1>
+            <h1>TUV Certification Database</h1>
             <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Search Employee Number or Name..." autocomplete="off">
+                <input type="text" id="searchInput" placeholder="Type EMP# or Name..." autocomplete="off">
                 <div id="suggestions"></div>
             </div>
         </div>
@@ -106,44 +112,35 @@
     </div>
 
     <footer>Created and Managed by Mohammad Javed Shaikh</footer>
-    <div class="last-updated" id="lastUpdated">Loading data...</div>
+    <div class="last-updated" id="lastUpdated">Initializing...</div>
 
     <script>
-        // --- 1. CONFIGURATION (CRITICAL) ---
-        const GITHUB_USER = 'YOUR_USERNAME'; // Change this
-        const GITHUB_REPO = 'YOUR_REPO_NAME'; // Change this
+        // CONFIGURATION
         const FILE_NAME = 'for web TUV.xlsx'; 
         const SHEET_NAME = 'TUV';
-
-        // Construction of the Raw URL
-        const RAW_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${encodeURIComponent(FILE_NAME)}`;
         
         let excelData = [];
 
-        // --- 2. DATA FETCHING ---
+        // 1. Load Data using Relative Path (Same folder)
         async function loadData() {
             const statusLabel = document.getElementById('lastUpdated');
             try {
-                const response = await fetch(RAW_URL);
-                if (!response.ok) throw new Error("File not found on GitHub. Check your Username and Repo name.");
+                // Fetching from the same folder
+                const response = await fetch(`./${FILE_NAME}`);
+                if (!response.ok) throw new Error("Excel file not found in this folder.");
                 
                 const data = await response.arrayBuffer();
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 const firstSheet = workbook.Sheets[SHEET_NAME];
                 
-                if (!firstSheet) throw new Error(`Sheet "${SHEET_NAME}" not found in Excel.`);
+                if (!firstSheet) throw new Error(`Sheet "${SHEET_NAME}" not found.`);
                 
                 excelData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-                statusLabel.innerText = "Data Loaded Successfully";
                 
-                // Fetch Last Updated Date from GitHub API
-                const api = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/commits?path=${encodeURIComponent(FILE_NAME)}&per_page=1`;
-                const commitRes = await fetch(api);
-                const commits = await commitRes.json();
-                if(commits[0]) {
-                    const date = new Date(commits[0].commit.committer.date);
-                    statusLabel.innerText = `Last Updated: ${date.toLocaleString()}`;
-                }
+                // Set timestamp to current time as a fallback
+                const now = new Date();
+                statusLabel.innerText = `System Active: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+                
             } catch (err) {
                 console.error(err);
                 statusLabel.innerText = "Error: " + err.message;
@@ -151,7 +148,7 @@
             }
         }
 
-        // --- 3. SEARCH & SUGGESTIONS ---
+        // 2. Search Logic
         const input = document.getElementById('searchInput');
         const suggestBox = document.getElementById('suggestions');
 
@@ -179,7 +176,7 @@
             }
         });
 
-        // --- 4. DISPLAY RESULTS ---
+        // 3. Render Selection
         function renderResult(row) {
             input.value = `${row['EMP#']} - ${row['NAME']}`;
             suggestBox.style.display = 'none';
@@ -196,18 +193,16 @@
 
             headers.forEach(h => {
                 let val = row[h];
-                
-                // Format Dates if they are objects
-                if (val instanceof Date) {
-                    val = val.toLocaleDateString();
-                }
+                if (val instanceof Date) val = val.toLocaleDateString();
 
                 let statusClass = '';
-                if (h === 'Status') {
-                    const s = String(val).toLowerCase();
-                    if (s.includes('expired')) statusClass = 'status-expired';
-                    else if (s.includes('soon') || parseInt(row['Remaining days']) < 30) statusClass = 'status-expiring';
-                    else if (s.includes('valid')) statusClass = 'status-valid';
+                if (h === 'Status' || h === 'Remaining days') {
+                    const s = String(row['Status']).toLowerCase();
+                    const days = parseInt(row['Remaining days']);
+                    
+                    if (s.includes('expired') || days < 0) statusClass = 'status-expired';
+                    else if (days < 30 || s.includes('soon')) statusClass = 'status-expiring';
+                    else if (s.includes('valid') || days >= 30) statusClass = 'status-valid';
                 }
 
                 grid.innerHTML += `
@@ -219,7 +214,7 @@
             });
         }
 
-        // Close search on outside click
+        // Close dropdown
         document.addEventListener('click', (e) => {
             if (!input.contains(e.target)) suggestBox.style.display = 'none';
         });
