@@ -9,342 +9,222 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        /* CSS STYLING */
         :root {
             --primary: #2c3e50;
             --accent: #3498db;
             --success: #27ae60;
             --warning: #f39c12;
             --danger: #e74c3c;
-            --light: #f8f9fa;
             --white: #ffffff;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f4f7f6;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             color: var(--primary);
         }
 
-        /* Header Logos */
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 40px;
-            background: var(--white);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 40px; background: var(--white);
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        .logo {
-            height: 60px;
-            width: auto;
-            object-fit: contain;
-        }
+        .logo { height: 60px; width: auto; object-fit: contain; }
 
-        /* Main Container */
-        .container {
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
 
-        .search-section {
-            text-align: center;
-            margin-bottom: 40px;
-            position: relative;
-        }
+        .search-section { text-align: center; margin-bottom: 40px; position: relative; }
 
-        h1 {
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: var(--primary);
-        }
-
-        /* Search Box */
-        .search-container {
-            position: relative;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        .search-container { position: relative; max-width: 600px; margin: 0 auto; }
 
         #searchInput {
-            width: 100%;
-            padding: 18px 25px;
-            font-size: 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 50px;
-            outline: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            width: 100%; padding: 18px 25px; font-size: 16px;
+            border: 2px solid #e0e0e0; border-radius: 50px; outline: none;
+            transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         }
 
-        #searchInput:focus {
-            border-color: var(--accent);
-            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.15);
-        }
+        #searchInput:focus { border-color: var(--accent); box-shadow: 0 10px 20px rgba(52, 152, 219, 0.15); }
 
-        /* Suggestions Dropdown */
         #suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--white);
-            border-radius: 15px;
-            margin-top: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            text-align: left;
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--white); border-radius: 15px; margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 300px;
+            overflow-y: auto; z-index: 1000; display: none; text-align: left;
         }
 
-        .suggestion-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background 0.2s;
-        }
+        .suggestion-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .suggestion-item:hover { background-color: #f8fbff; color: var(--accent); }
 
-        .suggestion-item:hover {
-            background-color: #f8fbff;
-            color: var(--accent);
-        }
-
-        /* Results Grid */
-        #resultContainer {
-            display: none;
-            animation: fadeIn 0.5s ease forwards;
-        }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-        }
+        #resultContainer { display: none; animation: fadeIn 0.5s ease; }
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
 
         .data-card {
-            background: var(--white);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border-top: 4px solid var(--accent);
-            transition: transform 0.2s;
+            background: var(--white); padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 5px solid var(--accent);
         }
 
-        .data-card:hover { transform: translateY(-5px); }
-
-        .label {
-            font-size: 11px;
-            text-transform: uppercase;
-            font-weight: 600;
-            color: #95a5a6;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .value {
-            font-size: 15px;
-            font-weight: 500;
-            word-break: break-all;
-        }
+        .label { font-size: 11px; text-transform: uppercase; font-weight: 600; color: #95a5a6; display: block; }
+        .value { font-size: 14px; font-weight: 500; margin-top: 4px; display: block; }
 
         /* Status Colors */
-        .status-valid { background: #e8f5e9; color: var(--success); border-color: var(--success) !important; }
-        .status-expiring { background: #fff3e0; color: var(--warning); border-color: var(--warning) !important; }
-        .status-expired { background: #ffebee; color: var(--danger); border-color: var(--danger) !important; }
+        .status-valid { border-left-color: var(--success); color: var(--success); }
+        .status-expiring { border-left-color: var(--warning); color: var(--warning); }
+        .status-expired { border-left-color: var(--danger); color: var(--danger); }
 
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 40px;
-            margin-top: 60px;
-            color: #7f8c8d;
-            font-size: 14px;
-        }
+        footer { text-align: center; padding: 40px; color: #7f8c8d; font-size: 13px; }
 
         .last-updated {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            font-size: 11px;
-            background: rgba(255,255,255,0.9);
-            padding: 8px 15px;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed; bottom: 20px; right: 20px; font-size: 11px;
+            background: #fff; padding: 8px 15px; border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 600px) {
-            header { flex-direction: column; gap: 15px; padding: 20px; }
-            .grid-layout { grid-template-columns: 1fr; }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <header>
-        <img src="orcp.bmp" alt="ORCP" class="logo">
-        <img src="nbtc.bmp" alt="NBTC" class="logo">
+        <img src="orcp.bmp" alt="ORCP" class="logo" onerror="this.src='https://via.placeholder.com/150?text=ORCP+LOGO'">
+        <img src="nbtc.bmp" alt="NBTC" class="logo" onerror="this.src='https://via.placeholder.com/150?text=NBTC+LOGO'">
     </header>
 
     <div class="container">
         <div class="search-section">
-            <h1>TUV Certification Database</h1>
+            <h1>TUV Certification Portal</h1>
             <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Search by EMP# or Name...">
+                <input type="text" id="searchInput" placeholder="Search Employee Number or Name..." autocomplete="off">
                 <div id="suggestions"></div>
             </div>
         </div>
 
         <div id="resultContainer">
-            <div class="grid-layout" id="detailsGrid">
-                </div>
+            <div class="grid-layout" id="detailsGrid"></div>
         </div>
     </div>
 
-    <footer>
-        Created and Managed by Mohammad Javed Shaikh
-    </footer>
-
-    <div class="last-updated" id="lastUpdated">
-        Syncing with GitHub...
-    </div>
+    <footer>Created and Managed by Mohammad Javed Shaikh</footer>
+    <div class="last-updated" id="lastUpdated">Loading data...</div>
 
     <script>
-        /*******************************************************
-         * JAVASCRIPT LOGIC
-         *******************************************************/
-
-        // 1. SETTINGS - CHANGE THESE
-        const GITHUB_USER = 'YOUR_GITHUB_USERNAME';
-        const GITHUB_REPO = 'YOUR_REPO_NAME';
-        const FILE_NAME = 'for web TUV.xlsx';
+        // --- 1. CONFIGURATION (CRITICAL) ---
+        const GITHUB_USER = 'YOUR_USERNAME'; // Change this
+        const GITHUB_REPO = 'YOUR_REPO_NAME'; // Change this
+        const FILE_NAME = 'for web TUV.xlsx'; 
         const SHEET_NAME = 'TUV';
 
-        // URLs
-        const RAW_FILE_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${encodeURIComponent(FILE_NAME)}`;
-        const API_COMMITS_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/commits?path=${encodeURIComponent(FILE_NAME)}&per_page=1`;
-
+        // Construction of the Raw URL
+        const RAW_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${encodeURIComponent(FILE_NAME)}`;
+        
         let excelData = [];
 
-        // Load Excel File
-        async function initApp() {
+        // --- 2. DATA FETCHING ---
+        async function loadData() {
+            const statusLabel = document.getElementById('lastUpdated');
             try {
-                // Fetch Excel
-                const response = await fetch(RAW_FILE_URL);
-                const arrayBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                const response = await fetch(RAW_URL);
+                if (!response.ok) throw new Error("File not found on GitHub. Check your Username and Repo name.");
                 
-                const worksheet = workbook.Sheets[SHEET_NAME];
-                if (!worksheet) throw new Error(`Sheet "${SHEET_NAME}" not found`);
+                const data = await response.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheet = workbook.Sheets[SHEET_NAME];
                 
-                excelData = XLSX.utils.sheet_to_json(worksheet);
-                console.log("Data Loaded:", excelData.length, "rows");
-
-                // Fetch Update Time
-                const commitResponse = await fetch(API_COMMITS_URL);
-                const commits = await commitResponse.json();
-                if (commits[0]) {
+                if (!firstSheet) throw new Error(`Sheet "${SHEET_NAME}" not found in Excel.`);
+                
+                excelData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                statusLabel.innerText = "Data Loaded Successfully";
+                
+                // Fetch Last Updated Date from GitHub API
+                const api = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/commits?path=${encodeURIComponent(FILE_NAME)}&per_page=1`;
+                const commitRes = await fetch(api);
+                const commits = await commitRes.json();
+                if(commits[0]) {
                     const date = new Date(commits[0].commit.committer.date);
-                    document.getElementById('lastUpdated').innerText = `Last Updated: ${date.toLocaleString()}`;
+                    statusLabel.innerText = `Last Updated: ${date.toLocaleString()}`;
                 }
             } catch (err) {
                 console.error(err);
-                document.getElementById('lastUpdated').innerText = "Error loading data.";
+                statusLabel.innerText = "Error: " + err.message;
+                statusLabel.style.color = "red";
             }
         }
 
-        const searchInput = document.getElementById('searchInput');
-        const suggestionsDiv = document.getElementById('suggestions');
-        const resultContainer = document.getElementById('resultContainer');
-        const detailsGrid = document.getElementById('detailsGrid');
+        // --- 3. SEARCH & SUGGESTIONS ---
+        const input = document.getElementById('searchInput');
+        const suggestBox = document.getElementById('suggestions');
 
-        // Live Suggestion Logic
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase().trim();
-            suggestionsDiv.innerHTML = '';
+        input.addEventListener('input', () => {
+            const val = input.value.toLowerCase().trim();
+            suggestBox.innerHTML = '';
+            if (val.length < 1) { suggestBox.style.display = 'none'; return; }
 
-            if (query.length < 1) {
-                suggestionsDiv.style.display = 'none';
-                return;
-            }
+            const filtered = excelData.filter(row => 
+                String(row['EMP#']).toLowerCase().includes(val) || 
+                String(row['NAME']).toLowerCase().includes(val)
+            ).slice(0, 10);
 
-            // Filter data for suggestions
-            const matches = excelData.filter(row => {
-                const empId = String(row['EMP#'] || '').toLowerCase();
-                const name = String(row['NAME'] || '').toLowerCase();
-                return empId.includes(query) || name.includes(query);
-            }).slice(0, 8); // Limit suggestions to 8
-
-            if (matches.length > 0) {
-                matches.forEach(item => {
+            if (filtered.length > 0) {
+                filtered.forEach(row => {
                     const div = document.createElement('div');
                     div.className = 'suggestion-item';
-                    div.innerText = `${item['EMP#']} - ${item['NAME']}`;
-                    div.onclick = () => selectRecord(item);
-                    suggestionsDiv.appendChild(div);
+                    div.innerText = `${row['EMP#']} - ${row['NAME']}`;
+                    div.onclick = () => renderResult(row);
+                    suggestBox.appendChild(div);
                 });
-                suggestionsDiv.style.display = 'block';
+                suggestBox.style.display = 'block';
             } else {
-                suggestionsDiv.style.display = 'none';
+                suggestBox.style.display = 'none';
             }
         });
 
-        // Display Selected Record
-        function selectRecord(row) {
-            searchInput.value = `${row['EMP#']} - ${row['NAME']}`;
-            suggestionsDiv.style.display = 'none';
-            detailsGrid.innerHTML = '';
-            resultContainer.style.display = 'block';
+        // --- 4. DISPLAY RESULTS ---
+        function renderResult(row) {
+            input.value = `${row['EMP#']} - ${row['NAME']}`;
+            suggestBox.style.display = 'none';
+            const grid = document.getElementById('detailsGrid');
+            const container = document.getElementById('resultContainer');
+            grid.innerHTML = '';
+            container.style.display = 'block';
 
-            // Define the headers we want to show
             const headers = [
                 'EMP#', 'NAME', 'POSITION', 'TYPE', 'ISSUE DATE', 'EXPIRY DATE', 
                 'Remaining days', 'Status', 'Institute Name', 'Requested for Renewal Date', 
                 'Certificate', 'EMP STATUS', 'REMARKS', 'Physical Copy Received'
             ];
 
-            headers.forEach(header => {
-                const value = row[header] || '—';
-                let customClass = '';
-
-                // Logic for status coloring
-                if (header === 'Status') {
-                    const statusText = String(value).toLowerCase();
-                    const days = parseInt(row['Remaining days']);
-
-                    if (statusText.includes('expired')) customClass = 'status-expired';
-                    else if (days < 30 || statusText.includes('soon')) customClass = 'status-expiring';
-                    else if (statusText.includes('valid')) customClass = 'status-valid';
+            headers.forEach(h => {
+                let val = row[h];
+                
+                // Format Dates if they are objects
+                if (val instanceof Date) {
+                    val = val.toLocaleDateString();
                 }
 
-                const card = document.createElement('div');
-                card.className = `data-card ${customClass}`;
-                card.innerHTML = `
-                    <span class="label">${header}</span>
-                    <span class="value">${value}</span>
+                let statusClass = '';
+                if (h === 'Status') {
+                    const s = String(val).toLowerCase();
+                    if (s.includes('expired')) statusClass = 'status-expired';
+                    else if (s.includes('soon') || parseInt(row['Remaining days']) < 30) statusClass = 'status-expiring';
+                    else if (s.includes('valid')) statusClass = 'status-valid';
+                }
+
+                grid.innerHTML += `
+                    <div class="data-card ${statusClass}">
+                        <span class="label">${h}</span>
+                        <span class="value">${val || '—'}</span>
+                    </div>
                 `;
-                detailsGrid.appendChild(card);
             });
         }
 
-        // Hide suggestions when clicking outside
+        // Close search on outside click
         document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target)) suggestionsDiv.style.display = 'none';
+            if (!input.contains(e.target)) suggestBox.style.display = 'none';
         });
 
-        // Start
-        initApp();
+        loadData();
     </script>
 </body>
 </html>
