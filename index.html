@@ -17,7 +17,7 @@
 }
 
 body{
-    background:#f4f6f9;
+    background:#f3f6fb;
     padding:20px;
 }
 
@@ -29,17 +29,12 @@ body{
     margin-bottom:40px;
 }
 
-.logo-left{
-    height:100px; /* ORCP bigger */
-}
-
-.logo-right{
-    height:50px; /* NBTC smaller */
-}
+.logo-left{ height:100px; }
+.logo-right{ height:50px; }
 
 /* SEARCH */
 .search-container{
-    max-width:650px;
+    max-width:700px;
     margin:0 auto 30px auto;
     position:relative;
 }
@@ -48,15 +43,14 @@ body{
     width:100%;
     padding:16px 20px;
     border-radius:12px;
-    border:1px solid #ddd;
+    border:1px solid #dcdcdc;
     font-size:16px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.08);
-    transition:0.3s;
+    box-shadow:0 3px 12px rgba(0,0,0,0.08);
 }
 
 #searchBox:focus{
     outline:none;
-    border-color:#1e40af;
+    border-color:#2563eb;
 }
 
 .suggestions{
@@ -65,7 +59,7 @@ body{
     background:#fff;
     border-radius:10px;
     margin-top:5px;
-    box-shadow:0 6px 15px rgba(0,0,0,0.1);
+    box-shadow:0 6px 20px rgba(0,0,0,0.1);
     max-height:300px;
     overflow-y:auto;
     z-index:999;
@@ -75,29 +69,28 @@ body{
     padding:12px 18px;
     cursor:pointer;
     transition:0.2s;
-    font-size:14px;
 }
 
 .suggestion-item:hover{
     background:#f1f5f9;
 }
 
-/* CARD GRID */
+.highlight{
+    background:yellow;
+    font-weight:600;
+}
+
+/* CARD */
 .card{
     max-width:1100px;
     margin:20px auto;
     background:#fff;
     padding:30px;
     border-radius:18px;
-    box-shadow:0 8px 25px rgba(0,0,0,0.08);
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
     gap:20px;
-}
-
-.field{
-    display:flex;
-    flex-direction:column;
 }
 
 .field label{
@@ -107,35 +100,19 @@ body{
     color:#555;
 }
 
-.field .value{
+.value{
     background:#f8fafc;
     padding:12px;
     border-radius:10px;
     min-height:45px;
     font-size:14px;
-    word-wrap:break-word;
 }
 
 /* STATUS COLORS */
-.status-valid{
-    background:#e6f7ec !important;
-    color:#15803d;
-    font-weight:600;
-}
+.status-valid{ background:#e6f7ec !important; color:#15803d; font-weight:600;}
+.status-expired{ background:#fde8e8 !important; color:#b91c1c; font-weight:600;}
+.status-warning{ background:#fff4e5 !important; color:#c2410c; font-weight:600;}
 
-.status-expired{
-    background:#fde8e8 !important;
-    color:#b91c1c;
-    font-weight:600;
-}
-
-.status-warning{
-    background:#fff4e5 !important;
-    color:#c2410c;
-    font-weight:600;
-}
-
-/* FOOTER */
 .footer{
     margin-top:40px;
     text-align:center;
@@ -165,14 +142,14 @@ body{
 <div id="resultContainer"></div>
 
 <div class="footer">
-    Created and Managed by Mohammad Javed Shaikh
+Created and Managed by Mohammad Javed Shaikh
 </div>
 
 <script>
 
 let dataRows = [];
 
-// Read Excel from same folder
+// LOAD EXCEL FROM SAME FOLDER
 fetch("for%20web%20TUV.xlsx")
 .then(res => res.arrayBuffer())
 .then(data => {
@@ -180,16 +157,14 @@ fetch("for%20web%20TUV.xlsx")
     const sheet = workbook.Sheets["TUV"];
     dataRows = XLSX.utils.sheet_to_json(sheet);
 })
-.catch(err => {
-    alert("Excel file not found. Make sure it is in same folder.");
-});
+.catch(()=> alert("Excel file not found in same folder."));
 
-// SEARCH
+
 const searchBox = document.getElementById("searchBox");
 const suggestionsDiv = document.getElementById("suggestions");
 
 searchBox.addEventListener("input", function(){
-    const value = this.value.toLowerCase();
+    const value = this.value.trim().toLowerCase();
     suggestionsDiv.innerHTML="";
     if(!value) return;
 
@@ -201,13 +176,16 @@ searchBox.addEventListener("input", function(){
     filtered.forEach(row=>{
         const div = document.createElement("div");
         div.classList.add("suggestion-item");
-        div.textContent = `${row["EMP#"]} - ${row["NAME"]}`;
+
+        const text = `${row["EMP#"]} - ${row["NAME"]}`;
+        const regex = new RegExp(`(${value})`, "gi");
+        div.innerHTML = text.replace(regex, `<span class="highlight">$1</span>`);
+
         div.onclick = ()=>showDetails(row);
         suggestionsDiv.appendChild(div);
     });
 });
 
-// SHOW DETAILS
 function showDetails(row){
     suggestionsDiv.innerHTML="";
     searchBox.value = `${row["EMP#"]} - ${row["NAME"]}`;
@@ -220,7 +198,6 @@ function showDetails(row){
 
     Object.keys(row).forEach(key=>{
         const field = document.createElement("div");
-        field.classList.add("field");
 
         const label = document.createElement("label");
         label.textContent = key;
@@ -230,7 +207,6 @@ function showDetails(row){
 
         let cellValue = row[key];
 
-        // Auto calculate Remaining Days from EXPIRY DATE
         if(key === "Remaining days"){
             const expiry = new Date(row["EXPIRY DATE"]);
             const today = new Date();
@@ -246,21 +222,20 @@ function showDetails(row){
             }
         }
 
-        // Status coloring
         if(key === "Status"){
             const expiry = new Date(row["EXPIRY DATE"]);
             const today = new Date();
             const diff = Math.ceil((expiry - today)/(1000*60*60*24));
 
             if(diff < 0){
-                value.classList.add("status-expired");
                 cellValue = "Expired";
+                value.classList.add("status-expired");
             } else if(diff < 30){
-                value.classList.add("status-warning");
                 cellValue = "Expiring Soon";
+                value.classList.add("status-warning");
             } else{
-                value.classList.add("status-valid");
                 cellValue = "Valid";
+                value.classList.add("status-valid");
             }
         }
 
@@ -272,6 +247,13 @@ function showDetails(row){
 
     container.appendChild(card);
 }
+
+// Hide suggestions when clicking outside
+document.addEventListener("click", function(e){
+    if(!document.querySelector(".search-container").contains(e.target)){
+        suggestionsDiv.innerHTML="";
+    }
+});
 
 </script>
 
