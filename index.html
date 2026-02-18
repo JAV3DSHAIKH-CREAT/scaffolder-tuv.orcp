@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TUV Certificate Tracker</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -17,7 +17,7 @@
 }
 
 body{
-    background:#f3f6fb;
+    background:#f4f6fb;
     padding:20px;
 }
 
@@ -43,9 +43,9 @@ body{
     width:100%;
     padding:16px 20px;
     border-radius:12px;
-    border:1px solid #dcdcdc;
+    border:1px solid #ccc;
     font-size:16px;
-    box-shadow:0 3px 12px rgba(0,0,0,0.08);
+    box-shadow:0 4px 15px rgba(0,0,0,0.08);
 }
 
 #searchBox:focus{
@@ -58,10 +58,10 @@ body{
     width:100%;
     background:#fff;
     border-radius:10px;
-    margin-top:5px;
-    box-shadow:0 6px 20px rgba(0,0,0,0.1);
+    box-shadow:0 8px 20px rgba(0,0,0,0.1);
     max-height:300px;
     overflow-y:auto;
+    margin-top:5px;
     z-index:999;
 }
 
@@ -72,7 +72,7 @@ body{
 }
 
 .suggestion-item:hover{
-    background:#f1f5f9;
+    background:#eef2ff;
 }
 
 .highlight{
@@ -80,20 +80,23 @@ body{
     font-weight:600;
 }
 
-/* CARD */
+/* DETAILS CARD */
 .card{
     max-width:1100px;
     margin:20px auto;
-    background:#fff;
-    padding:30px;
-    border-radius:18px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.08);
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
     gap:20px;
 }
 
-.field label{
+.box{
+    background:#fff;
+    padding:18px;
+    border-radius:15px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.08);
+}
+
+.label{
     font-size:13px;
     font-weight:600;
     margin-bottom:6px;
@@ -101,22 +104,30 @@ body{
 }
 
 .value{
-    background:#f8fafc;
-    padding:12px;
-    border-radius:10px;
-    min-height:45px;
     font-size:14px;
+    word-break:break-word;
 }
 
 /* STATUS COLORS */
-.status-valid{ background:#e6f7ec !important; color:#15803d; font-weight:600;}
-.status-expired{ background:#fde8e8 !important; color:#b91c1c; font-weight:600;}
-.status-warning{ background:#fff4e5 !important; color:#c2410c; font-weight:600;}
+.status-valid{
+    color:#15803d;
+    font-weight:600;
+}
 
+.status-expired{
+    color:#b91c1c;
+    font-weight:600;
+}
+
+.status-warning{
+    color:#d97706;
+    font-weight:600;
+}
+
+/* FOOTER */
 .footer{
-    margin-top:40px;
     text-align:center;
-    font-size:14px;
+    margin-top:40px;
     color:#666;
 }
 
@@ -139,7 +150,7 @@ body{
     <div class="suggestions" id="suggestions"></div>
 </div>
 
-<div id="resultContainer"></div>
+<div id="detailsContainer" class="card"></div>
 
 <div class="footer">
 Created and Managed by Mohammad Javed Shaikh
@@ -147,111 +158,126 @@ Created and Managed by Mohammad Javed Shaikh
 
 <script>
 
-let dataRows = [];
+let headers = [];
+let rows = [];
 
 // LOAD EXCEL FROM SAME FOLDER
 fetch("for%20web%20TUV.xlsx")
 .then(res => res.arrayBuffer())
 .then(data => {
-    const workbook = XLSX.read(data, {type:"array"});
+    const workbook = XLSX.read(data,{type:"array"});
     const sheet = workbook.Sheets["TUV"];
-    dataRows = XLSX.utils.sheet_to_json(sheet);
-})
-.catch(()=> alert("Excel file not found in same folder."));
+    const json = XLSX.utils.sheet_to_json(sheet,{header:1});
 
+    headers = json[0];      // First row = headers
+    rows = json.slice(1);   // Remaining rows
+})
+.catch(()=>alert("Excel file not loading. Use Live Server or GitHub Pages."));
 
 const searchBox = document.getElementById("searchBox");
-const suggestionsDiv = document.getElementById("suggestions");
+const suggestions = document.getElementById("suggestions");
+const detailsContainer = document.getElementById("detailsContainer");
 
-searchBox.addEventListener("input", function(){
+// SEARCH FUNCTION
+searchBox.addEventListener("input",function(){
+
     const value = this.value.trim().toLowerCase();
-    suggestionsDiv.innerHTML="";
+    suggestions.innerHTML="";
     if(!value) return;
 
-    const filtered = dataRows.filter(row =>
-        String(row["EMP#"]).toLowerCase().includes(value) ||
-        String(row["NAME"]).toLowerCase().includes(value)
-    ).slice(0,10);
+    rows.forEach((row,index)=>{
 
-    filtered.forEach(row=>{
-        const div = document.createElement("div");
-        div.classList.add("suggestion-item");
+        const colA = String(row[0] || "");
+        const colB = String(row[1] || "");
 
-        const text = `${row["EMP#"]} - ${row["NAME"]}`;
-        const regex = new RegExp(`(${value})`, "gi");
-        div.innerHTML = text.replace(regex, `<span class="highlight">$1</span>`);
+        if(colA.toLowerCase().includes(value) || colB.toLowerCase().includes(value)){
 
-        div.onclick = ()=>showDetails(row);
-        suggestionsDiv.appendChild(div);
+            const div = document.createElement("div");
+            div.className="suggestion-item";
+
+            const displayText = colA + " - " + colB;
+            const regex = new RegExp(value,"gi");
+
+            div.innerHTML = displayText.replace(regex,match=>`<span class="highlight">${match}</span>`);
+
+            div.onclick = ()=>showDetails(index);
+
+            suggestions.appendChild(div);
+        }
+
     });
+
 });
 
-function showDetails(row){
-    suggestionsDiv.innerHTML="";
-    searchBox.value = `${row["EMP#"]} - ${row["NAME"]}`;
+// SHOW DETAILS
+function showDetails(index){
 
-    const container = document.getElementById("resultContainer");
-    container.innerHTML="";
+    suggestions.innerHTML="";
+    const row = rows[index];
+    detailsContainer.innerHTML="";
 
-    const card = document.createElement("div");
-    card.classList.add("card");
+    headers.forEach((header,i)=>{
 
-    Object.keys(row).forEach(key=>{
-        const field = document.createElement("div");
+        const box = document.createElement("div");
+        box.className="box";
 
-        const label = document.createElement("label");
-        label.textContent = key;
+        const label = document.createElement("div");
+        label.className="label";
+        label.textContent = header;
 
         const value = document.createElement("div");
-        value.classList.add("value");
+        value.className="value";
 
-        let cellValue = row[key];
+        let cell = row[i] || "-";
 
-        if(key === "Remaining days"){
-            const expiry = new Date(row["EXPIRY DATE"]);
-            const today = new Date();
-            const diff = Math.ceil((expiry - today)/(1000*60*60*24));
-            cellValue = diff;
-
-            if(diff < 0){
-                value.classList.add("status-expired");
-            } else if(diff < 30){
-                value.classList.add("status-warning");
-            } else{
-                value.classList.add("status-valid");
+        // AUTO CALCULATE REMAINING DAYS
+        if(header.toLowerCase().includes("remaining")){
+            const expiryIndex = headers.findIndex(h=>h.toLowerCase().includes("expiry"));
+            if(expiryIndex !== -1){
+                const expiry = new Date(row[expiryIndex]);
+                const today = new Date();
+                const diff = Math.ceil((expiry - today)/(1000*60*60*24));
+                cell = diff;
             }
         }
 
-        if(key === "Status"){
-            const expiry = new Date(row["EXPIRY DATE"]);
-            const today = new Date();
-            const diff = Math.ceil((expiry - today)/(1000*60*60*24));
+        // STATUS COLOR BASED ON EXPIRY
+        if(header.toLowerCase().includes("status")){
+            const expiryIndex = headers.findIndex(h=>h.toLowerCase().includes("expiry"));
+            if(expiryIndex !== -1){
+                const expiry = new Date(row[expiryIndex]);
+                const today = new Date();
+                const diff = Math.ceil((expiry - today)/(1000*60*60*24));
 
-            if(diff < 0){
-                cellValue = "Expired";
-                value.classList.add("status-expired");
-            } else if(diff < 30){
-                cellValue = "Expiring Soon";
-                value.classList.add("status-warning");
-            } else{
-                cellValue = "Valid";
-                value.classList.add("status-valid");
+                if(diff < 0){
+                    value.classList.add("status-expired");
+                    cell = "Expired";
+                }
+                else if(diff < 30){
+                    value.classList.add("status-warning");
+                    cell = "Expiring Soon";
+                }
+                else{
+                    value.classList.add("status-valid");
+                    cell = "Valid";
+                }
             }
         }
 
-        value.textContent = cellValue ?? "-";
-        field.appendChild(label);
-        field.appendChild(value);
-        card.appendChild(field);
+        value.textContent = cell;
+
+        box.appendChild(label);
+        box.appendChild(value);
+        detailsContainer.appendChild(box);
+
     });
 
-    container.appendChild(card);
 }
 
-// Hide suggestions when clicking outside
-document.addEventListener("click", function(e){
+// CLOSE SUGGESTION WHEN CLICK OUTSIDE
+document.addEventListener("click",function(e){
     if(!document.querySelector(".search-container").contains(e.target)){
-        suggestionsDiv.innerHTML="";
+        suggestions.innerHTML="";
     }
 });
 
