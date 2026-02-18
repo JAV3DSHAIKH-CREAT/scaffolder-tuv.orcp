@@ -3,284 +3,261 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TUV Certificate Tracker</title>
+<title>TUV PROFESSIONAL DATABASE</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Poppins',sans-serif;
+:root{
+    --dark-bg:#0f172a;
+    --card-bg:#1e293b;
+    --accent:#2563eb;
+    --light:#e2e8f0;
+    --muted:#94a3b8;
+    --shadow:0 10px 25px rgba(0,0,0,0.4);
 }
+*{margin:0;padding:0;box-sizing:border-box}
 
 body{
-    background:#f4f6fb;
+    font-family:'Poppins',sans-serif;
+    background:var(--dark-bg);
+    color:var(--light);
+    min-height:100vh;
+}
+
+header{
+    background:linear-gradient(135deg,#1e3a8a,#2563eb);
     padding:20px;
+    text-align:center;
+    border-bottom-left-radius:30px;
+    border-bottom-right-radius:30px;
+    box-shadow:var(--shadow);
 }
 
-/* HEADER */
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:40px;
-}
+header h1{font-size:1.4rem;font-weight:600}
+header p{font-size:.8rem;opacity:.8}
 
-.logo-left{ height:100px; }
-.logo-right{ height:50px; }
-
-/* SEARCH */
-.search-container{
-    max-width:700px;
-    margin:0 auto 30px auto;
+.search-wrapper{
+    max-width:500px;
+    margin:20px auto;
     position:relative;
 }
 
-#searchBox{
+#mainSearch{
     width:100%;
-    padding:16px 20px;
-    border-radius:12px;
-    border:1px solid #ccc;
-    font-size:16px;
-    box-shadow:0 4px 15px rgba(0,0,0,0.08);
-}
-
-#searchBox:focus{
-    outline:none;
-    border-color:#2563eb;
+    padding:12px 20px;
+    border-radius:50px;
+    border:1px solid #334155;
+    background:#1e293b;
+    color:white;
+    font-size:0.9rem;
 }
 
 .suggestions{
     position:absolute;
-    width:100%;
-    background:#fff;
-    border-radius:10px;
-    box-shadow:0 8px 20px rgba(0,0,0,0.1);
-    max-height:300px;
+    top:50px;
+    left:0;
+    right:0;
+    background:#1e293b;
+    border-radius:15px;
+    max-height:220px;
     overflow-y:auto;
-    margin-top:5px;
-    z-index:999;
+    display:none;
+    border:1px solid #334155;
+    box-shadow:var(--shadow);
 }
 
 .suggestion-item{
-    padding:12px 18px;
+    padding:10px 20px;
     cursor:pointer;
-    transition:0.2s;
+    border-bottom:1px solid #334155;
+    font-size:.85rem;
 }
-
-.suggestion-item:hover{
-    background:#eef2ff;
-}
+.suggestion-item:hover{background:#2563eb}
 
 .highlight{
-    background:yellow;
+    color:#facc15;
     font-weight:600;
 }
 
-/* DETAILS CARD */
-.card{
-    max-width:1100px;
-    margin:20px auto;
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-    gap:20px;
+.container{
+    max-width:95%;
+    margin:0 auto 50px auto;
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+    justify-content:center;
 }
 
-.box{
-    background:#fff;
-    padding:18px;
+.section-box{
+    background:var(--card-bg);
+    width:48%;
+    padding:15px;
     border-radius:15px;
-    box-shadow:0 8px 25px rgba(0,0,0,0.08);
+    box-shadow:var(--shadow);
+    border:1px solid #334155;
+}
+
+.section-box h3{
+    margin-bottom:10px;
+    font-weight:700;
+    font-size:.95rem;
+    color:#3b82f6;
+    border-left:4px solid var(--accent);
+    padding-left:8px;
+}
+
+.section-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+}
+
+.info-card{
+    background:#0f172a;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid #334155;
 }
 
 .label{
-    font-size:13px;
-    font-weight:600;
-    margin-bottom:6px;
-    color:#555;
+    font-size:.6rem;
+    color:var(--muted);
+    text-transform:uppercase;
 }
 
 .value{
-    font-size:14px;
+    font-size:.85rem;
+    font-weight:500;
     word-break:break-word;
 }
 
-/* STATUS COLORS */
-.status-valid{
-    color:#15803d;
-    font-weight:600;
-}
+.status-expired{color:#f87171;font-weight:600}
+.status-warning{color:#facc15;font-weight:600}
+.status-valid{color:#22c55e;font-weight:600}
 
-.status-expired{
-    color:#b91c1c;
-    font-weight:600;
-}
-
-.status-warning{
-    color:#d97706;
-    font-weight:600;
-}
-
-/* FOOTER */
-.footer{
+footer{
     text-align:center;
-    margin-top:40px;
-    color:#666;
+    padding:10px;
+    background:#1e293b;
+    font-size:.75rem;
+    color:var(--muted);
 }
 
-@media(max-width:600px){
-    .logo-left{height:70px;}
-    .logo-right{height:40px;}
+@media(max-width:1000px){
+    .section-box{width:100%}
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-    <img src="orcp.bmp" class="logo-left">
-    <img src="nbtc.bmp" class="logo-right">
+<header>
+    <h1>TUV CERTIFICATE DATABASE</h1>
+    <p>PROFESSIONAL RECORD MANAGEMENT SYSTEM</p>
+</header>
+
+<div class="search-wrapper">
+    <input type="text" id="mainSearch" placeholder="Search by EMP# or NAME..." autocomplete="off">
+    <div id="suggestions" class="suggestions"></div>
 </div>
 
-<div class="search-container">
-    <input type="text" id="searchBox" placeholder="Search by EMP# or Name...">
-    <div class="suggestions" id="suggestions"></div>
-</div>
+<div class="container" id="infoContainer"></div>
 
-<div id="detailsContainer" class="card"></div>
-
-<div class="footer">
+<footer>
 Created and Managed by Mohammad Javed Shaikh
-</div>
+</footer>
 
 <script>
+const FILE_URL="for%20web%20TUV.xlsx";
+let headers=[];
+let rows=[];
 
-let headers = [];
-let rows = [];
-
-// LOAD EXCEL FROM SAME FOLDER
-fetch("for%20web%20TUV.xlsx")
-.then(res => res.arrayBuffer())
-.then(data => {
-    const workbook = XLSX.read(data,{type:"array"});
-    const sheet = workbook.Sheets["TUV"];
-    const json = XLSX.utils.sheet_to_json(sheet,{header:1});
-
-    headers = json[0];      // First row = headers
-    rows = json.slice(1);   // Remaining rows
-})
-.catch(()=>alert("Excel file not loading. Use Live Server or GitHub Pages."));
-
-const searchBox = document.getElementById("searchBox");
-const suggestions = document.getElementById("suggestions");
-const detailsContainer = document.getElementById("detailsContainer");
-
-// SEARCH FUNCTION
-searchBox.addEventListener("input",function(){
-
-    const value = this.value.trim().toLowerCase();
-    suggestions.innerHTML="";
-    if(!value) return;
-
-    rows.forEach((row,index)=>{
-
-        const colA = String(row[0] || "");
-        const colB = String(row[1] || "");
-
-        if(colA.toLowerCase().includes(value) || colB.toLowerCase().includes(value)){
-
-            const div = document.createElement("div");
-            div.className="suggestion-item";
-
-            const displayText = colA + " - " + colB;
-            const regex = new RegExp(value,"gi");
-
-            div.innerHTML = displayText.replace(regex,match=>`<span class="highlight">${match}</span>`);
-
-            div.onclick = ()=>showDetails(index);
-
-            suggestions.appendChild(div);
-        }
-
-    });
-
-});
-
-// SHOW DETAILS
-function showDetails(index){
-
-    suggestions.innerHTML="";
-    const row = rows[index];
-    detailsContainer.innerHTML="";
-
-    headers.forEach((header,i)=>{
-
-        const box = document.createElement("div");
-        box.className="box";
-
-        const label = document.createElement("div");
-        label.className="label";
-        label.textContent = header;
-
-        const value = document.createElement("div");
-        value.className="value";
-
-        let cell = row[i] || "-";
-
-        // AUTO CALCULATE REMAINING DAYS
-        if(header.toLowerCase().includes("remaining")){
-            const expiryIndex = headers.findIndex(h=>h.toLowerCase().includes("expiry"));
-            if(expiryIndex !== -1){
-                const expiry = new Date(row[expiryIndex]);
-                const today = new Date();
-                const diff = Math.ceil((expiry - today)/(1000*60*60*24));
-                cell = diff;
-            }
-        }
-
-        // STATUS COLOR BASED ON EXPIRY
-        if(header.toLowerCase().includes("status")){
-            const expiryIndex = headers.findIndex(h=>h.toLowerCase().includes("expiry"));
-            if(expiryIndex !== -1){
-                const expiry = new Date(row[expiryIndex]);
-                const today = new Date();
-                const diff = Math.ceil((expiry - today)/(1000*60*60*24));
-
-                if(diff < 0){
-                    value.classList.add("status-expired");
-                    cell = "Expired";
-                }
-                else if(diff < 30){
-                    value.classList.add("status-warning");
-                    cell = "Expiring Soon";
-                }
-                else{
-                    value.classList.add("status-valid");
-                    cell = "Valid";
-                }
-            }
-        }
-
-        value.textContent = cell;
-
-        box.appendChild(label);
-        box.appendChild(value);
-        detailsContainer.appendChild(box);
-
-    });
-
+async function loadExcel(){
+    const response=await fetch(FILE_URL);
+    const buffer=await response.arrayBuffer();
+    const workbook=XLSX.read(buffer,{type:"array"});
+    const sheet=workbook.Sheets["TUV"];
+    const json=XLSX.utils.sheet_to_json(sheet,{header:1});
+    headers=json[0];
+    rows=json.slice(1);
 }
+loadExcel();
 
-// CLOSE SUGGESTION WHEN CLICK OUTSIDE
-document.addEventListener("click",function(e){
-    if(!document.querySelector(".search-container").contains(e.target)){
-        suggestions.innerHTML="";
+const searchInput=document.getElementById("mainSearch");
+const suggestBox=document.getElementById("suggestions");
+
+searchInput.addEventListener("input",function(){
+    const query=this.value.toLowerCase().trim();
+    suggestBox.innerHTML="";
+    if(query.length<1){suggestBox.style.display="none";return;}
+
+    const matches=rows.filter(row=>{
+        const colA=String(row[0]||"").toLowerCase();
+        const colB=String(row[1]||"").toLowerCase();
+        return colA.includes(query)||colB.includes(query);
+    }).slice(0,8);
+
+    if(matches.length>0){
+        suggestBox.style.display="block";
+        matches.forEach(row=>{
+            const div=document.createElement("div");
+            div.className="suggestion-item";
+            const text=row[0]+" - "+row[1];
+            const regex=new RegExp(query,"gi");
+            div.innerHTML=text.replace(regex,match=>`<span class="highlight">${match}</span>`);
+            div.onclick=()=>renderDetails(row);
+            suggestBox.appendChild(div);
+        });
+    }else{
+        suggestBox.style.display="none";
     }
 });
 
+function renderDetails(row){
+    suggestBox.style.display="none";
+    const container=document.getElementById("infoContainer");
+    container.innerHTML="";
+
+    function createSection(title,start,end){
+        let section=document.createElement("div");
+        section.className="section-box";
+        let html=`<h3>${title}</h3><div class="section-grid">`;
+
+        for(let i=start;i<end;i++){
+            let label=headers[i]||"";
+            let value=row[i]||"N/A";
+
+            if(label.toLowerCase().includes("expiry")){
+                const date=new Date(value);
+                const diff=Math.ceil((date-new Date())/(1000*60*60*24));
+                if(diff<0)value=`${diff} (Expired)`;
+                else if(diff<30)value=`${diff} Days`;
+            }
+
+            html+=`
+            <div class="info-card">
+                <span class="label">${label}</span>
+                <span class="value">${value}</span>
+            </div>`;
+        }
+
+        html+=`</div>`;
+        section.innerHTML=html;
+        container.appendChild(section);
+    }
+
+    createSection("Employee Info",0,5);
+    createSection("Certificate Info",5,10);
+    createSection("Additional Details",10,headers.length);
+}
+
+window.addEventListener("click",(e)=>{
+    if(!e.target.closest(".search-wrapper")){
+        suggestBox.style.display="none";
+    }
+});
 </script>
 
 </body>
